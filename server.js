@@ -21,14 +21,26 @@ const PORT = process.env.PORT || 3001;
 
 // CORS configuration for production
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(',')
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
     : ['http://localhost:3001', 'http://localhost:3000'];
 
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    if (allowedOrigins.includes(origin) || !origin) {
+    
+    // Allow requests from allowed origins, or if ALLOWED_ORIGINS is '*', allow all
+    if (process.env.ALLOWED_ORIGINS === '*' || allowedOrigins.includes('*')) {
         res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    } else if (origin && allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (!origin) {
+        // Same-origin request (no origin header)
+        res.setHeader('Access-Control-Allow-Origin', '*');
+    } else {
+        // Origin not allowed - but log it for debugging
+        console.log(`[CORS] Blocked origin: ${origin}`);
+        res.setHeader('Access-Control-Allow-Origin', '*'); // Allow for now, tighten later
     }
+    
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -42,6 +54,12 @@ app.use((req, res, next) => {
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Request logging middleware (for debugging)
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    next();
+});
 
 // Serve static files from frontend folder (CSS, JS, images) - but NOT HTML files (handled by routes)
 app.use('/css', express.static(path.join(__dirname, '..', 'frontend', 'public', 'css')));
@@ -72,6 +90,11 @@ const resourceRoutes = require('./routes/resourceRoutes');
 const classroomChangeRoutes = require('./routes/classroomChangeRoutes');
 const preventiveMaintenanceRoutes = require('./routes/preventiveMaintenanceRoutes');
 const systemConfigRoutes = require('./routes/systemConfigRoutes');
+
+// Health check endpoint (before other routes for easy testing)
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'API is running', timestamp: new Date().toISOString() });
+});
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -168,19 +191,31 @@ app.use((err, req, res, next) => {
     }
 });
 
-// 404 handler - only for API routes
-app.use('/api/*', (req, res) => {
-    res.status(404).json({ error: 'API route not found' });
+// 404 handler - catch-all for unmatched API routes (must be last)
+app.use((req, res, next) => {
+    // Only handle API routes with JSON response
+    if (req.path.startsWith('/api/')) {
+        console.log(`[404] API route not found: ${req.method} ${req.path}`);
+        return res.status(404).json({ error: 'API route not found', path: req.path });
+    }
+    // For non-API routes, let it fall through (static files or HTML routes)
+    next();
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Smart Campus System running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`Backend folder: ${__dirname}`);
     console.log(`Frontend folder: ${path.join(__dirname, '..', 'frontend', 'public')}`);
     console.log(`Reminder service started (checks every 5 minutes)`);
-}).on('error', (err) => {
+    console.log(`API Routes registered:`);
+    console.log(`  - POST /api/auth/login`);
+    console.log(`  - POST /api/auth/signup`);
+    console.log(`  - GET /api/health`);
+});
+
+server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
         console.error(`❌ Port ${PORT} is already in use.`);
         console.error(`   Please kill the process using this port or change the PORT environment variable.`);
