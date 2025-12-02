@@ -5,7 +5,7 @@ const Transportation = require('../models/Transportation');
 class TransportationController {
     static async getRoutes(req, res) {
         try {
-            const routes = await query('SELECT * FROM transportationRoutes ORDER BY route_name');
+            const routes = await query('SELECT * FROM transportationroutes ORDER BY route_name');
             const { date } = req.query;
             
             const routesWithAvailability = await Promise.all(routes.map(async (route) => {
@@ -13,14 +13,14 @@ class TransportationController {
                 
                 if (date) {
                     const count = await query(
-                        `SELECT COUNT(*) as count FROM transportationReservations 
+                        `SELECT COUNT(*) as count FROM transportationreservations 
                          WHERE route_id = ? AND date = ? AND status = 'reserved'`,
                         [route.route_id, date]
                     );
                     activeReservations = count[0].count;
                 } else {
                     const count = await query(
-                        `SELECT COUNT(*) as count FROM transportationReservations 
+                        `SELECT COUNT(*) as count FROM transportationreservations 
                          WHERE route_id = ? AND status = 'reserved'`,
                         [route.route_id]
                     );
@@ -48,7 +48,7 @@ class TransportationController {
             const reservation = await Transportation.reserveSeat(routeId, userId, date, time);
             
             const route = await query(
-                'SELECT * FROM transportationRoutes WHERE route_id = ?',
+                'SELECT * FROM transportationroutes WHERE route_id = ?',
                 [routeId]
             );
             
@@ -73,7 +73,7 @@ class TransportationController {
             await Transportation.updateExpiredReservations();
             
             const reservations = await Transportation.getUserReservations(req.user.user_id);
-            const routes = await query('SELECT * FROM transportationRoutes');
+            const routes = await query('SELECT * FROM transportationroutes');
             
             const reservationsWithRoutes = reservations.map(reservation => {
                 const route = routes.find(r => r.route_id == reservation.route_id);

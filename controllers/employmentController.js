@@ -5,7 +5,7 @@ const { users } = require('../utils/dbHelpers');
 class EmploymentController {
     static async getJobs(req, res) {
         try {
-            const jobs = await query('SELECT * FROM studentEmployment WHERE status = ?', ['active']);
+            const jobs = await query('SELECT * FROM studentemployment WHERE status = ?', ['active']);
             res.json(jobs);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -19,7 +19,7 @@ class EmploymentController {
             }
 
             const { jobId, semester } = req.body;
-            const job = await query('SELECT * FROM studentEmployment WHERE job_id = ?', [jobId]);
+            const job = await query('SELECT * FROM studentemployment WHERE job_id = ?', [jobId]);
             
             if (!job[0]) {
                 return res.status(404).json({ error: 'Job not found' });
@@ -41,7 +41,7 @@ class EmploymentController {
 
             // Check if already applied for this job
             const existingApplication = await query(
-                'SELECT * FROM employmentApplications WHERE job_id = ? AND user_id = ?',
+                'SELECT * FROM employmentapplications WHERE job_id = ? AND user_id = ?',
                 [jobId, req.user.user_id]
             );
             
@@ -51,14 +51,14 @@ class EmploymentController {
 
             // Check if already applied for any job this semester
             const semesterApplication = await query(
-                `SELECT * FROM employmentApplications 
+                `SELECT * FROM employmentapplications 
                  WHERE user_id = ? AND semester = ? AND status NOT IN ('rejected', 'withdrawn')`,
                 [req.user.user_id, currentSemester]
             );
             
             if (semesterApplication.length > 0) {
                 const existingJob = await query(
-                    'SELECT * FROM studentEmployment WHERE job_id = ?',
+                    'SELECT * FROM studentemployment WHERE job_id = ?',
                     [semesterApplication[0].job_id]
                 );
                 return res.status(400).json({ 
@@ -67,14 +67,14 @@ class EmploymentController {
             }
 
             const result = await query(
-                `INSERT INTO employmentApplications (job_id, user_id, semester, application_date, status)
+                `INSERT INTO employmentapplications (job_id, user_id, semester, application_date, status)
                  VALUES (?, ?, ?, NOW(), 'pending')`,
                 [jobId, req.user.user_id, currentSemester]
             );
 
             const applicationId = result.insertId;
             const application = await query(
-                'SELECT * FROM employmentApplications WHERE application_id = ?',
+                'SELECT * FROM employmentapplications WHERE application_id = ?',
                 [applicationId]
             );
 
@@ -95,8 +95,8 @@ class EmploymentController {
         try {
             const userApplications = await query(
                 `SELECT ea.*, se.job_id, se.job_title, se.department_id, se.description, se.salary, se.hours_per_week, se.status as job_status, se.posted_at, se.application_deadline, se.supervisor_id
-                 FROM employmentApplications ea
-                 JOIN studentEmployment se ON ea.job_id = se.job_id
+                 FROM employmentapplications ea
+                 JOIN studentemployment se ON ea.job_id = se.job_id
                  WHERE ea.user_id = ?
                  ORDER BY ea.application_date DESC`,
                 [req.user.user_id]
@@ -201,7 +201,7 @@ class EmploymentController {
 
             const { applicationId } = req.params;
             const application = await query(
-                'SELECT * FROM employmentApplications WHERE application_id = ?',
+                'SELECT * FROM employmentapplications WHERE application_id = ?',
                 [applicationId]
             );
             
@@ -214,7 +214,7 @@ class EmploymentController {
             }
 
             const job = await query(
-                'SELECT * FROM studentEmployment WHERE job_id = ?',
+                'SELECT * FROM studentemployment WHERE job_id = ?',
                 [application[0].job_id]
             );
 
@@ -228,12 +228,12 @@ class EmploymentController {
             // If user already has an approved job, reject it first
             if (existingApproved.length > 0) {
                 const existingJob = await query(
-                    'SELECT * FROM studentEmployment WHERE job_id = ?',
+                    'SELECT * FROM studentemployment WHERE job_id = ?',
                     [existingApproved[0].job_id]
                 );
 
                 await query(
-                    `UPDATE employmentApplications 
+                    `UPDATE employmentapplications 
                      SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW()
                      WHERE application_id = ?`,
                     [req.user.user_id, existingApproved[0].application_id]
@@ -249,7 +249,7 @@ class EmploymentController {
 
             // Update application status
             await query(
-                `UPDATE employmentApplications 
+                `UPDATE employmentapplications 
                  SET status = 'approved', reviewed_by = ?, reviewed_at = NOW()
                  WHERE application_id = ?`,
                 [req.user.user_id, applicationId]
@@ -271,7 +271,7 @@ class EmploymentController {
 
             for (const otherApp of otherApplications) {
                 await query(
-                    `UPDATE employmentApplications 
+                    `UPDATE employmentapplications 
                      SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW()
                      WHERE application_id = ?`,
                     [req.user.user_id, otherApp.application_id]
@@ -294,12 +294,12 @@ class EmploymentController {
 
             for (const otherApp of userOtherApps) {
                 const otherJob = await query(
-                    'SELECT * FROM studentEmployment WHERE job_id = ?',
+                    'SELECT * FROM studentemployment WHERE job_id = ?',
                     [otherApp.job_id]
                 );
 
                 await query(
-                    `UPDATE employmentApplications 
+                    `UPDATE employmentapplications 
                      SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW()
                      WHERE application_id = ?`,
                     [req.user.user_id, otherApp.application_id]
@@ -328,7 +328,7 @@ class EmploymentController {
             const { applicationId } = req.params;
             const { reason } = req.body;
             const application = await query(
-                'SELECT * FROM employmentApplications WHERE application_id = ?',
+                'SELECT * FROM employmentapplications WHERE application_id = ?',
                 [applicationId]
             );
             
@@ -341,14 +341,14 @@ class EmploymentController {
             }
 
             await query(
-                `UPDATE employmentApplications 
+                `UPDATE employmentapplications 
                  SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW()
                  WHERE application_id = ?`,
                 [req.user.user_id, applicationId]
             );
 
             const job = await query(
-                'SELECT * FROM studentEmployment WHERE job_id = ?',
+                'SELECT * FROM studentemployment WHERE job_id = ?',
                 [application[0].job_id]
             );
 

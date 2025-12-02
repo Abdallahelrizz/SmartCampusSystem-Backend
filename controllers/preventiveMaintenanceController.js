@@ -8,7 +8,7 @@ class PreventiveMaintenanceController {
             
             // Schema has: maintenance_id, resource_id, maintenance_type, scheduled_date, status, notes, assigned_to, completed_at, created_at
             const result = await query(
-                `INSERT INTO preventiveMaintenance (resource_id, maintenance_type, scheduled_date, status, notes, assigned_to, created_at)
+                `INSERT INTO preventivemaintenance (resource_id, maintenance_type, scheduled_date, status, notes, assigned_to, created_at)
                  VALUES (?, ?, ?, 'pending', ?, ?, NOW())`,
                 [resource_id, maintenance_type || null, scheduled_date || new Date(), 
                  notes || null, assigned_to || null]
@@ -16,7 +16,7 @@ class PreventiveMaintenanceController {
 
             const maintenanceId = result.insertId;
             const task = await query(
-                'SELECT * FROM preventiveMaintenance WHERE maintenance_id = ?',
+                'SELECT * FROM preventivemaintenance WHERE maintenance_id = ?',
                 [maintenanceId]
             );
 
@@ -29,7 +29,7 @@ class PreventiveMaintenanceController {
     static async getTasks(req, res) {
         try {
             const tasks = await query(
-                `SELECT * FROM preventiveMaintenance 
+                `SELECT * FROM preventivemaintenance 
                  WHERE assigned_to = ? OR assigned_to IS NULL 
                  ORDER BY due_date ASC`,
                 [req.user.user_id]
@@ -47,7 +47,7 @@ class PreventiveMaintenanceController {
             
             // Schema uses maintenance_id as primary key, but we'll accept taskId as parameter name for API compatibility
             const task = await query(
-                'SELECT * FROM preventiveMaintenance WHERE maintenance_id = ?',
+                'SELECT * FROM preventivemaintenance WHERE maintenance_id = ?',
                 [taskId]
             );
             
@@ -72,12 +72,12 @@ class PreventiveMaintenanceController {
             values.push(taskId);
             
             await query(
-                `UPDATE preventiveMaintenance SET ${setClause} WHERE maintenance_id = ?`,
+                `UPDATE preventivemaintenance SET ${setClause} WHERE maintenance_id = ?`,
                 values
             );
             
             const updated = await query(
-                'SELECT * FROM preventiveMaintenance WHERE maintenance_id = ?',
+                'SELECT * FROM preventivemaintenance WHERE maintenance_id = ?',
                 [taskId]
             );
             
@@ -92,33 +92,33 @@ class PreventiveMaintenanceController {
             const date = req.query.date || new Date().toISOString().split('T')[0];
             
             const issues = await query(
-                `SELECT COUNT(*) as count FROM issueReports 
+                `SELECT COUNT(*) as count FROM issuereports 
                  WHERE status = 'resolved' AND DATE(resolved_at) = ?`,
                 [date]
             );
             const completedRepairs = issues[0].count;
             
             const maintenance = await query(
-                `SELECT COUNT(*) as count FROM preventiveMaintenance 
+                `SELECT COUNT(*) as count FROM preventivemaintenance 
                  WHERE status = 'completed' AND DATE(completed_at) = ?`,
                 [date]
             );
             const completedMaintenance = maintenance[0].count;
             
             const cleaning = await query(
-                `SELECT COUNT(*) as count FROM cleaningTasks 
+                `SELECT COUNT(*) as count FROM cleaningtasks 
                  WHERE status = 'completed' AND DATE(completed_at) = ?`,
                 [date]
             );
             const completedCleaning = cleaning[0].count;
             
             const pendingIssues = await query(
-                `SELECT COUNT(*) as count FROM issueReports WHERE status = 'pending'`
+                `SELECT COUNT(*) as count FROM issuereports WHERE status = 'pending'`
             );
             const pendingCount = pendingIssues[0].count;
             
             const inProgressIssues = await query(
-                `SELECT COUNT(*) as count FROM issueReports WHERE status = 'in_progress'`
+                `SELECT COUNT(*) as count FROM issuereports WHERE status = 'in_progress'`
             );
             const inProgressCount = inProgressIssues[0].count;
 

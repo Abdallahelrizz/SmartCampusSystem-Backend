@@ -6,14 +6,14 @@ class NursingAppointment {
         const { user_id, appointment_date, notes } = appointmentData;
         
         const result = await query(
-            `INSERT INTO nursingAppointments (user_id, appointment_date, status, notes, created_at)
+            `INSERT INTO nursingappointments (user_id, appointment_date, status, notes, created_at)
              VALUES (?, ?, 'scheduled', ?, NOW())`,
             [user_id, appointment_date, notes || null]
         );
         
         const appointmentId = result.insertId;
         const appointment = await query(
-            'SELECT * FROM nursingAppointments WHERE appointment_id = ?',
+            'SELECT * FROM nursingappointments WHERE appointment_id = ?',
             [appointmentId]
         );
         
@@ -29,7 +29,7 @@ class NursingAppointment {
 
     static async getUserAppointments(userId) {
         return await query(
-            'SELECT * FROM nursingAppointments WHERE user_id = ? ORDER BY appointment_date DESC',
+            'SELECT * FROM nursingappointments WHERE user_id = ? ORDER BY appointment_date DESC',
             [userId]
         );
     }
@@ -48,11 +48,11 @@ class NursingAppointment {
 
     static async cancel(appointmentId) {
         await query(
-            `UPDATE nursingAppointments SET status = 'cancelled' WHERE appointment_id = ?`,
+            `UPDATE nursingappointments SET status = 'cancelled' WHERE appointment_id = ?`,
             [appointmentId]
         );
         const result = await query(
-            'SELECT * FROM nursingAppointments WHERE appointment_id = ?',
+            'SELECT * FROM nursingappointments WHERE appointment_id = ?',
             [appointmentId]
         );
         return result[0] || null;

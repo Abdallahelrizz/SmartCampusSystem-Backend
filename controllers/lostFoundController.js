@@ -8,7 +8,7 @@ class LostFoundController {
             
             // Schema fields: item_id, user_id, item_name, description, location_found, location_lost, status, created_at
             const result = await query(
-                `INSERT INTO lostFound 
+                `INSERT INTO lostfound 
                  (user_id, item_name, description, location_found, location_lost, status, created_at)
                  VALUES (?, ?, ?, ?, ?, ?, NOW())`,
                 [req.user.user_id, item_name || null, description || null, location_found || null, 
@@ -17,7 +17,7 @@ class LostFoundController {
 
             const itemId = result.insertId;
             const item = await query(
-                'SELECT * FROM lostFound WHERE item_id = ?',
+                'SELECT * FROM lostfound WHERE item_id = ?',
                 [itemId]
             );
 
@@ -30,7 +30,7 @@ class LostFoundController {
     static async getItems(req, res) {
         try {
             // Schema has created_at, not reported_at
-            const items = await query('SELECT * FROM lostFound ORDER BY created_at DESC');
+            const items = await query('SELECT * FROM lostfound ORDER BY created_at DESC');
             res.json(items);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -41,7 +41,7 @@ class LostFoundController {
         try {
             const { itemId } = req.params;
             const item = await query(
-                'SELECT * FROM lostFound WHERE item_id = ?',
+                'SELECT * FROM lostfound WHERE item_id = ?',
                 [itemId]
             );
             
@@ -52,7 +52,7 @@ class LostFoundController {
             // Schema has: item_id, user_id, item_name, description, location_found, location_lost, status, created_at
             // No claimed_by_user_id or claimed_at fields - just update status
             await query(
-                `UPDATE lostFound 
+                `UPDATE lostfound 
                  SET status = 'claimed'
                  WHERE item_id = ?`,
                 [itemId]

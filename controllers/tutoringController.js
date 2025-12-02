@@ -12,7 +12,7 @@ class TutoringController {
                     duration, start_time, end_time, capacity, description, recurring, frequency } = req.body;
             
             const result = await query(
-                `INSERT INTO tutoringSessions 
+                `INSERT INTO tutoringsessions 
                  (created_by_user_id, organizer_user_id, course_code, course_name, tutor, room, 
                   start_date, day_of_week, time, duration, start_time, end_time, capacity, 
                   description, recurring, frequency, created_at)
@@ -25,7 +25,7 @@ class TutoringController {
 
             const sessionId = result.insertId;
             const session = await query(
-                'SELECT * FROM tutoringSessions WHERE session_id = ?',
+                'SELECT * FROM tutoringsessions WHERE session_id = ?',
                 [sessionId]
             );
 
@@ -37,7 +37,7 @@ class TutoringController {
 
     static async getSessions(req, res) {
         try {
-            const sessions = await query('SELECT * FROM tutoringSessions ORDER BY created_at DESC');
+            const sessions = await query('SELECT * FROM tutoringsessions ORDER BY created_at DESC');
             res.json(sessions);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -48,7 +48,7 @@ class TutoringController {
         try {
             const { sessionId } = req.params;
             const session = await query(
-                'SELECT * FROM tutoringSessions WHERE session_id = ?',
+                'SELECT * FROM tutoringsessions WHERE session_id = ?',
                 [sessionId]
             );
             
@@ -73,7 +73,7 @@ class TutoringController {
         try {
             const { sessionId } = req.params;
             const session = await query(
-                'SELECT * FROM tutoringSessions WHERE session_id = ?',
+                'SELECT * FROM tutoringsessions WHERE session_id = ?',
                 [sessionId]
             );
             
@@ -85,7 +85,7 @@ class TutoringController {
                 return res.status(403).json({ error: 'Not authorized to delete this session' });
             }
             
-            await query('DELETE FROM tutoringSessions WHERE session_id = ?', [sessionId]);
+            await query('DELETE FROM tutoringsessions WHERE session_id = ?', [sessionId]);
             res.json({ message: 'Tutoring session deleted' });
         } catch (error) {
             res.status(500).json({ error: error.message });

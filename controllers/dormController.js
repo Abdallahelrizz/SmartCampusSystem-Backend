@@ -4,7 +4,7 @@ const Notification = require('../models/Notification');
 class DormController {
     static async getAvailableDorms(req, res) {
         try {
-            const dorms = await query('SELECT * FROM dormUnits WHERE status = ?', ['available']);
+            const dorms = await query('SELECT * FROM dormunits WHERE status = ?', ['available']);
             res.json(dorms);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -15,7 +15,7 @@ class DormController {
         try {
             const { dormId, semester } = req.body;
             const dorm = await query(
-                'SELECT * FROM dormUnits WHERE dorm_id = ?',
+                'SELECT * FROM dormunits WHERE dorm_id = ?',
                 [dormId]
             );
             
@@ -29,7 +29,7 @@ class DormController {
 
             // Check if user already has a reservation for this semester
             const existingReservation = await query(
-                `SELECT * FROM dormUnits 
+                `SELECT * FROM dormunits 
                  WHERE assigned_user_id = ? AND semester = ? AND status = 'occupied'`,
                 [req.user.user_id, semester]
             );
@@ -56,7 +56,7 @@ class DormController {
             }
 
             await query(
-                `UPDATE dormUnits 
+                `UPDATE dormunits 
                  SET assigned_user_id = ?, status = 'occupied', start_date = ?, end_date = ?, semester = ?
                  WHERE dorm_id = ?`,
                 [req.user.user_id, startDate, endDate, semester, dormId]
@@ -78,7 +78,7 @@ class DormController {
     static async getMyReservation(req, res) {
         try {
             const userDorm = await query(
-                `SELECT * FROM dormUnits 
+                `SELECT * FROM dormunits 
                  WHERE assigned_user_id = ? AND status = 'occupied' 
                  LIMIT 1`,
                 [req.user.user_id]
@@ -96,7 +96,7 @@ class DormController {
         try {
             const { dormId } = req.params;
             const dorm = await query(
-                'SELECT * FROM dormUnits WHERE dorm_id = ?',
+                'SELECT * FROM dormunits WHERE dorm_id = ?',
                 [dormId]
             );
             
@@ -105,7 +105,7 @@ class DormController {
             }
 
             await query(
-                `UPDATE dormUnits 
+                `UPDATE dormunits 
                  SET assigned_user_id = NULL, status = 'available', 
                      start_date = NULL, end_date = NULL, semester = NULL
                  WHERE dorm_id = ?`,

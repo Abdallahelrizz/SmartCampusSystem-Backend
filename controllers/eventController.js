@@ -162,7 +162,7 @@ class EventController {
             // Cancel all tickets for this event
             const { query } = require('../config/db');
             const eventTickets = await query(
-                'SELECT * FROM eventTickets WHERE event_id = ? AND status = ?',
+                'SELECT * FROM eventtickets WHERE event_id = ? AND status = ?',
                 [eventId, 'reserved']
             );
             

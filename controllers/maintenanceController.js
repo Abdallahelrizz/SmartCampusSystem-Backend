@@ -64,7 +64,7 @@ class MaintenanceController {
 
     static async getCleaningTasks(req, res) {
         try {
-            const tasks = await query('SELECT * FROM cleaningTasks ORDER BY created_at DESC');
+            const tasks = await query('SELECT * FROM cleaningtasks ORDER BY created_at DESC');
             const allTasks = await Promise.all(tasks.map(async (t) => {
                 const resource = await resources.findById(t.resource_id);
                 return { ...t, resource };
@@ -79,7 +79,7 @@ class MaintenanceController {
         try {
             const { taskId } = req.params;
             const task = await query(
-                'SELECT * FROM cleaningTasks WHERE task_id = ?',
+                'SELECT * FROM cleaningtasks WHERE task_id = ?',
                 [taskId]
             );
             
@@ -88,12 +88,12 @@ class MaintenanceController {
             }
             
             await query(
-                'UPDATE cleaningTasks SET status = ?, completed_at = NOW() WHERE task_id = ?',
+                'UPDATE cleaningtasks SET status = ?, completed_at = NOW() WHERE task_id = ?',
                 ['completed', taskId]
             );
             
             const updated = await query(
-                'SELECT * FROM cleaningTasks WHERE task_id = ?',
+                'SELECT * FROM cleaningtasks WHERE task_id = ?',
                 [taskId]
             );
             
@@ -108,7 +108,7 @@ class MaintenanceController {
             const { taskId } = req.params;
             const { itemIndex, completed } = req.body;
             const task = await query(
-                'SELECT * FROM cleaningTasks WHERE task_id = ?',
+                'SELECT * FROM cleaningtasks WHERE task_id = ?',
                 [taskId]
             );
             
@@ -119,7 +119,7 @@ class MaintenanceController {
             // Get checklist items
             // Schema has: checklist_id, task_id, task, completed (no item_index field)
             const checklistItems = await query(
-                'SELECT * FROM cleaningTaskChecklist WHERE task_id = ? ORDER BY checklist_id',
+                'SELECT * FROM cleaningtaskchecklist WHERE task_id = ? ORDER BY checklist_id',
                 [taskId]
             );
             
@@ -127,27 +127,27 @@ class MaintenanceController {
             // Schema has: checklist_id (primary key), task_id, task, completed
             if (checklistItems[itemIndex]) {
                 await query(
-                    'UPDATE cleaningTaskChecklist SET completed = ? WHERE checklist_id = ?',
+                    'UPDATE cleaningtaskchecklist SET completed = ? WHERE checklist_id = ?',
                     [completed ? 1 : 0, checklistItems[itemIndex].checklist_id]
                 );
             }
             
             // Check if all items are completed
             const updatedItems = await query(
-                'SELECT * FROM cleaningTaskChecklist WHERE task_id = ?',
+                'SELECT * FROM cleaningtaskchecklist WHERE task_id = ?',
                 [taskId]
             );
             const allCompleted = updatedItems.length > 0 && updatedItems.every(item => item.completed === 1);
             
             if (allCompleted && task[0].status !== 'completed') {
                 await query(
-                    'UPDATE cleaningTasks SET status = ?, completed_at = NOW() WHERE task_id = ?',
+                    'UPDATE cleaningtasks SET status = ?, completed_at = NOW() WHERE task_id = ?',
                     ['completed', taskId]
                 );
             }
             
             const updated = await query(
-                'SELECT * FROM cleaningTasks WHERE task_id = ?',
+                'SELECT * FROM cleaningtasks WHERE task_id = ?',
                 [taskId]
             );
             

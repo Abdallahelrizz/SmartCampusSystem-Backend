@@ -21,19 +21,19 @@ if (process.env.MYSQL_URL) {
 } else {
     // Use individual environment variables
     dbConfig = {
-        host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT) || 3306,
-        user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || 'smartcampus',
-        waitForConnections: true,
-        connectionLimit: 10,
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'smartcampus',
+    waitForConnections: true,
+    connectionLimit: 10,
         queueLimit: 0,
         // SSL configuration for production (Railway, etc.)
         ssl: process.env.NODE_ENV === 'production' && (process.env.DB_SSL === 'true' || process.env.MYSQL_URL)
             ? { rejectUnauthorized: false }
             : false
-    };
+};
 }
 
 // Ensure required environment variables are set

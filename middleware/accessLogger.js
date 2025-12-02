@@ -20,7 +20,7 @@ function logAccess(req, res, next) {
     // Log the access asynchronously (don't block the request)
     // Schema fields: log_id, user_id, action, resource, ip_address, timestamp
     query(
-        `INSERT INTO accessLogs (user_id, action, resource, ip_address, timestamp)
+        `INSERT INTO accesslogs (user_id, action, resource, ip_address, timestamp)
          VALUES (?, ?, ?, ?, ?)`,
         [logEntry.user_id, `${logEntry.method} ${logEntry.endpoint}`, logEntry.endpoint, 
          logEntry.ip, logEntry.timestamp]
@@ -43,7 +43,7 @@ function logAccess(req, res, next) {
                 // Log failed attempt
                 // Schema fields: log_id, user_id, action, resource, ip_address, timestamp
                 query(
-                    `INSERT INTO accessLogs (user_id, action, resource, ip_address, timestamp)
+                    `INSERT INTO accesslogs (user_id, action, resource, ip_address, timestamp)
                      VALUES (?, ?, ?, ?, ?)`,
                     [logEntry.user_id, `FAILED ${logEntry.method} ${logEntry.endpoint}`, logEntry.endpoint, 
                      logEntry.ip, new Date()]

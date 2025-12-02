@@ -9,7 +9,7 @@ class ClassroomChangeController {
                     course_code, reason, details, issue_id } = req.body;
             
             const result = await query(
-                `INSERT INTO classroomChangeRequests 
+                `INSERT INTO classroomchangerequests 
                  (faculty_user_id, current_classroom, new_classroom, course_code, reason, details, issue_id, status, created_at)
                  VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
                 [req.user.user_id, 
@@ -20,7 +20,7 @@ class ClassroomChangeController {
             
             const requestId = result.insertId;
             const request = await query(
-                'SELECT * FROM classroomChangeRequests WHERE request_id = ?',
+                'SELECT * FROM classroomchangerequests WHERE request_id = ?',
                 [requestId]
             );
 
@@ -44,7 +44,7 @@ class ClassroomChangeController {
     static async getMyRequests(req, res) {
         try {
             const requests = await query(
-                'SELECT * FROM classroomChangeRequests WHERE faculty_user_id = ? ORDER BY created_at DESC',
+                'SELECT * FROM classroomchangerequests WHERE faculty_user_id = ? ORDER BY created_at DESC',
                 [req.user.user_id]
             );
             res.json(requests);
@@ -60,7 +60,7 @@ class ClassroomChangeController {
             }
 
             const requests = await query(
-                'SELECT * FROM classroomChangeRequests WHERE status = ? ORDER BY created_at ASC',
+                'SELECT * FROM classroomchangerequests WHERE status = ? ORDER BY created_at ASC',
                 ['pending']
             );
             const allUsers = await users.getAll();
@@ -92,7 +92,7 @@ class ClassroomChangeController {
 
             const { requestId } = req.params;
             const request = await query(
-                'SELECT * FROM classroomChangeRequests WHERE request_id = ?',
+                'SELECT * FROM classroomchangerequests WHERE request_id = ?',
                 [requestId]
             );
             
@@ -105,7 +105,7 @@ class ClassroomChangeController {
             }
 
             await query(
-                `UPDATE classroomChangeRequests 
+                `UPDATE classroomchangerequests 
                  SET status = 'approved', reviewed_by = ?, reviewed_at = NOW()
                  WHERE request_id = ?`,
                 [req.user.user_id, requestId]
@@ -133,7 +133,7 @@ class ClassroomChangeController {
             const { requestId } = req.params;
             const { reason } = req.body;
             const request = await query(
-                'SELECT * FROM classroomChangeRequests WHERE request_id = ?',
+                'SELECT * FROM classroomchangerequests WHERE request_id = ?',
                 [requestId]
             );
             
@@ -146,7 +146,7 @@ class ClassroomChangeController {
             }
 
             await query(
-                `UPDATE classroomChangeRequests 
+                `UPDATE classroomchangerequests 
                  SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW()
                  WHERE request_id = ?`,
                 [req.user.user_id, requestId]

@@ -64,7 +64,7 @@ class Event {
 
         // Check capacity
         const reservedTickets = await query(
-            `SELECT COUNT(*) as count FROM eventTickets 
+            `SELECT COUNT(*) as count FROM eventtickets 
              WHERE event_id = ? AND status = 'reserved'`,
             [eventId]
         );
@@ -76,7 +76,7 @@ class Event {
 
         // Check if user already has a ticket
         const existingTicket = await query(
-            `SELECT * FROM eventTickets 
+            `SELECT * FROM eventtickets 
              WHERE event_id = ? AND user_id = ? AND status = 'reserved'`,
             [eventId, userId]
         );
@@ -86,14 +86,14 @@ class Event {
         }
 
         const result = await query(
-            `INSERT INTO eventTickets (event_id, user_id, reserved_at, status)
+            `INSERT INTO eventtickets (event_id, user_id, reserved_at, status)
              VALUES (?, ?, NOW(), 'reserved')`,
             [eventId, userId]
         );
         
         const ticketId = result.insertId;
         const ticket = await query(
-            'SELECT * FROM eventTickets WHERE ticket_id = ?',
+            'SELECT * FROM eventtickets WHERE ticket_id = ?',
             [ticketId]
         );
         
@@ -102,18 +102,18 @@ class Event {
 
     static async getUserTickets(userId) {
         return await query(
-            'SELECT * FROM eventTickets WHERE user_id = ? ORDER BY reserved_at DESC',
+            'SELECT * FROM eventtickets WHERE user_id = ? ORDER BY reserved_at DESC',
             [userId]
         );
     }
 
     static async cancelTicket(ticketId) {
         await query(
-            `UPDATE eventTickets SET status = 'cancelled' WHERE ticket_id = ?`,
+            `UPDATE eventtickets SET status = 'cancelled' WHERE ticket_id = ?`,
             [ticketId]
         );
         const result = await query(
-            'SELECT * FROM eventTickets WHERE ticket_id = ?',
+            'SELECT * FROM eventtickets WHERE ticket_id = ?',
             [ticketId]
         );
         return result[0] || null;

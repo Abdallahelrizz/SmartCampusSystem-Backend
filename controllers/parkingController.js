@@ -4,7 +4,7 @@ const Notification = require('../models/Notification');
 class ParkingController {
     static async getAvailableSpaces(req, res) {
         try {
-            const spaces = await query('SELECT * FROM parkingSpaces WHERE status = ?', ['available']);
+            const spaces = await query('SELECT * FROM parkingspaces WHERE status = ?', ['available']);
             res.json(spaces);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -15,7 +15,7 @@ class ParkingController {
         try {
             const { spaceId, semester } = req.body;
             const space = await query(
-                'SELECT * FROM parkingSpaces WHERE parking_space_id = ?',
+                'SELECT * FROM parkingspaces WHERE parking_space_id = ?',
                 [spaceId]
             );
             
@@ -29,7 +29,7 @@ class ParkingController {
 
             // Check if user already has a reservation for this semester
             const existingReservation = await query(
-                `SELECT * FROM parkingSpaces 
+                `SELECT * FROM parkingspaces 
                  WHERE user_id = ? AND semester = ? AND status = 'reserved'`,
                 [req.user.user_id, semester]
             );
@@ -56,7 +56,7 @@ class ParkingController {
             }
 
             await query(
-                `UPDATE parkingSpaces 
+                `UPDATE parkingspaces 
                  SET user_id = ?, status = 'reserved', semester = ?, start_date = ?, end_date = ?, reserved_at = NOW()
                  WHERE parking_space_id = ?`,
                 [req.user.user_id, semester, startDate, endDate, spaceId]
@@ -78,7 +78,7 @@ class ParkingController {
     static async getMyReservations(req, res) {
         try {
             const userReservations = await query(
-                `SELECT * FROM parkingSpaces 
+                `SELECT * FROM parkingspaces 
                  WHERE user_id = ? AND status = 'reserved' 
                  ORDER BY reserved_at DESC`,
                 [req.user.user_id]
@@ -92,7 +92,7 @@ class ParkingController {
     static async getMyReservation(req, res) {
         try {
             const userReservation = await query(
-                `SELECT * FROM parkingSpaces 
+                `SELECT * FROM parkingspaces 
                  WHERE user_id = ? AND status = 'reserved' 
                  LIMIT 1`,
                 [req.user.user_id]
@@ -110,7 +110,7 @@ class ParkingController {
         try {
             const { spaceId } = req.params;
             const space = await query(
-                'SELECT * FROM parkingSpaces WHERE parking_space_id = ?',
+                'SELECT * FROM parkingspaces WHERE parking_space_id = ?',
                 [spaceId]
             );
             
@@ -119,7 +119,7 @@ class ParkingController {
             }
 
             await query(
-                `UPDATE parkingSpaces 
+                `UPDATE parkingspaces 
                  SET user_id = NULL, status = 'available', semester = NULL, 
                      start_date = NULL, end_date = NULL, reserved_at = NULL
                  WHERE parking_space_id = ?`,

@@ -418,12 +418,12 @@ class AdminController {
         try {
             // Get activity from various tables
             const bookings = await query('SELECT booking_id, user_id, created_at FROM bookings');
-            const issues = await query('SELECT issue_id, reporter_user_id as user_id, created_at FROM issueReports');
+            const issues = await query('SELECT issue_id, reporter_user_id as user_id, created_at FROM issuereports');
             const events = await query('SELECT event_id, organizer_user_id as user_id, created_at FROM events');
             // Schema has: log_id, user_id, action, resource, ip_address, timestamp
             // Filter by action containing 'FAILED' to get failed login attempts
             const accessLogs = await query(
-                "SELECT user_id, timestamp, resource as endpoint, action FROM accessLogs WHERE action LIKE '%FAILED%'"
+                "SELECT user_id, timestamp, resource as endpoint, action FROM accesslogs WHERE action LIKE '%FAILED%'"
             );
 
             const logs = [
@@ -468,7 +468,7 @@ class AdminController {
             // Schema has: log_id, user_id, action, resource, ip_address, timestamp
             // Get failed login attempts by checking action field and resource field
             const accessLogs = await query(
-                "SELECT * FROM accessLogs WHERE action LIKE '%FAILED%' AND resource LIKE ?",
+                "SELECT * FROM accesslogs WHERE action LIKE '%FAILED%' AND resource LIKE ?",
                 ['%login%']
             );
             

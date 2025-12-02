@@ -6,14 +6,14 @@ class TransportationAdminController {
             const { route_name, start_location, end_location, capacity, schedule, delays, cancellations } = req.body;
             
             const result = await query(
-                `INSERT INTO transportationRoutes (route_name, start_location, end_location, capacity, status, created_at)
+                `INSERT INTO transportationroutes (route_name, start_location, end_location, capacity, status, created_at)
                  VALUES (?, ?, ?, ?, ?, NOW())`,
                 [route_name, start_location || null, end_location || null, capacity || null, req.body.status || 'active']
             );
             
             const routeId = result.insertId;
             const route = await query(
-                'SELECT * FROM transportationRoutes WHERE route_id = ?',
+                'SELECT * FROM transportationroutes WHERE route_id = ?',
                 [routeId]
             );
 
@@ -27,7 +27,7 @@ class TransportationAdminController {
         try {
             const { routeId } = req.params;
             const route = await query(
-                'SELECT * FROM transportationRoutes WHERE route_id = ?',
+                'SELECT * FROM transportationroutes WHERE route_id = ?',
                 [routeId]
             );
             
@@ -45,12 +45,12 @@ class TransportationAdminController {
             values.push(routeId);
             
             await query(
-                `UPDATE transportationRoutes SET ${setClause} WHERE route_id = ?`,
+                `UPDATE transportationroutes SET ${setClause} WHERE route_id = ?`,
                 values
             );
             
             const updated = await query(
-                'SELECT * FROM transportationRoutes WHERE route_id = ?',
+                'SELECT * FROM transportationroutes WHERE route_id = ?',
                 [routeId]
             );
             
@@ -64,7 +64,7 @@ class TransportationAdminController {
         try {
             const { routeId } = req.params;
             const route = await query(
-                'SELECT * FROM transportationRoutes WHERE route_id = ?',
+                'SELECT * FROM transportationroutes WHERE route_id = ?',
                 [routeId]
             );
             
@@ -72,7 +72,7 @@ class TransportationAdminController {
                 return res.status(404).json({ error: 'Route not found' });
             }
             
-            await query('DELETE FROM transportationRoutes WHERE route_id = ?', [routeId]);
+            await query('DELETE FROM transportationroutes WHERE route_id = ?', [routeId]);
             res.json({ message: 'Route deleted' });
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -85,7 +85,7 @@ class TransportationAdminController {
             const { schedule, delays, cancellations } = req.body;
             
             const route = await query(
-                'SELECT * FROM transportationRoutes WHERE route_id = ?',
+                'SELECT * FROM transportationroutes WHERE route_id = ?',
                 [routeId]
             );
             
@@ -108,12 +108,12 @@ class TransportationAdminController {
             values.push(routeId);
             
             await query(
-                `UPDATE transportationRoutes SET ${setClause} WHERE route_id = ?`,
+                `UPDATE transportationroutes SET ${setClause} WHERE route_id = ?`,
                 values
             );
             
             const updated = await query(
-                'SELECT * FROM transportationRoutes WHERE route_id = ?',
+                'SELECT * FROM transportationroutes WHERE route_id = ?',
                 [routeId]
             );
             

@@ -5,7 +5,7 @@ class Booking {
     static async createRequest(requestData) {
         const { user_id, resource_id, start_time, end_time, purpose, priority } = requestData;
         const result = await query(
-            `INSERT INTO bookingRequests (user_id, resource_id, start_time, end_time, purpose, priority, status, created_at)
+            `INSERT INTO bookingrequests (user_id, resource_id, start_time, end_time, purpose, priority, status, created_at)
              VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())`,
             [user_id, resource_id, start_time || null, end_time || null, purpose || null, priority || null]
         );
@@ -16,12 +16,12 @@ class Booking {
     }
 
     static async getAllRequests() {
-        return await query('SELECT * FROM bookingRequests ORDER BY created_at DESC');
+        return await query('SELECT * FROM bookingrequests ORDER BY created_at DESC');
     }
 
     static async getRequestById(requestId) {
         const results = await query(
-            'SELECT * FROM bookingRequests WHERE request_id = ?',
+            'SELECT * FROM bookingrequests WHERE request_id = ?',
             [requestId]
         );
         return results[0] || null;
@@ -29,7 +29,7 @@ class Booking {
 
     static async getUserRequests(userId) {
         return await query(
-            'SELECT * FROM bookingRequests WHERE user_id = ? ORDER BY created_at DESC',
+            'SELECT * FROM bookingrequests WHERE user_id = ? ORDER BY created_at DESC',
             [userId]
         );
     }
@@ -40,7 +40,7 @@ class Booking {
 
         // Update request status
         await query(
-            `UPDATE bookingRequests SET status = 'approved', reviewed_by_admin_id = ?, reviewed_at = NOW() 
+            `UPDATE bookingrequests SET status = 'approved', reviewed_by_admin_id = ?, reviewed_at = NOW() 
              WHERE request_id = ?`,
             [adminId, requestId]
         );
@@ -63,7 +63,7 @@ class Booking {
 
     static async rejectRequest(requestId, adminId) {
         await query(
-            `UPDATE bookingRequests SET status = 'rejected', reviewed_by_admin_id = ?, reviewed_at = NOW() 
+            `UPDATE bookingrequests SET status = 'rejected', reviewed_by_admin_id = ?, reviewed_at = NOW() 
              WHERE request_id = ?`,
             [adminId, requestId]
         );

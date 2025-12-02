@@ -3,14 +3,14 @@ const { query } = require('../config/db');
 class Transportation {
     static async reserveSeat(routeId, userId, date, time) {
         const route = await query(
-            'SELECT * FROM transportationRoutes WHERE route_id = ?',
+            'SELECT * FROM transportationroutes WHERE route_id = ?',
             [routeId]
         );
         if (!route[0]) throw new Error('Route not found');
 
         // Check if user already has a reservation
         const existingReservation = await query(
-            `SELECT * FROM transportationReservations 
+            `SELECT * FROM transportationreservations 
              WHERE route_id = ? AND user_id = ? AND date = ? AND time = ? AND status = 'reserved'`,
             [routeId, userId, date, time]
         );
@@ -21,7 +21,7 @@ class Transportation {
 
         // Count active reservations
         const activeReservations = await query(
-            `SELECT COUNT(*) as count FROM transportationReservations 
+            `SELECT COUNT(*) as count FROM transportationreservations 
              WHERE route_id = ? AND date = ? AND time = ? AND status = 'reserved'`,
             [routeId, date, time]
         );
@@ -32,14 +32,14 @@ class Transportation {
 
         // Create reservation
         const result = await query(
-            `INSERT INTO transportationReservations (route_id, user_id, date, time, reserved_at, status)
+            `INSERT INTO transportationreservations (route_id, user_id, date, time, reserved_at, status)
              VALUES (?, ?, ?, ?, NOW(), 'reserved')`,
             [routeId, userId, date, time]
         );
         
         const reservationId = result.insertId;
         const reservation = await query(
-            'SELECT * FROM transportationReservations WHERE reservation_id = ?',
+            'SELECT * FROM transportationreservations WHERE reservation_id = ?',
             [reservationId]
         );
         
@@ -48,7 +48,7 @@ class Transportation {
 
     static async getUserReservations(userId) {
         return await query(
-            `SELECT * FROM transportationReservations 
+            `SELECT * FROM transportationreservations 
              WHERE user_id = ? AND status = 'reserved' 
              ORDER BY date DESC, time DESC`,
             [userId]
@@ -57,11 +57,11 @@ class Transportation {
 
     static async cancelReservation(reservationId) {
         await query(
-            `UPDATE transportationReservations SET status = 'cancelled' WHERE reservation_id = ?`,
+            `UPDATE transportationreservations SET status = 'cancelled' WHERE reservation_id = ?`,
             [reservationId]
         );
         const result = await query(
-            'SELECT * FROM transportationReservations WHERE reservation_id = ?',
+            'SELECT * FROM transportationreservations WHERE reservation_id = ?',
             [reservationId]
         );
         return result[0] || null;
