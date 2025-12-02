@@ -20,22 +20,15 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // CORS configuration for production
-// In production, allow all origins if ALLOWED_ORIGINS is not set (for Vercel frontend)
-// In development, restrict to localhost
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-    : (process.env.NODE_ENV === 'production' ? ['*'] : ['http://localhost:3001', 'http://localhost:3000']);
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:3001', 'http://localhost:3000'];
 
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    
-    // Allow all origins in production if ALLOWED_ORIGINS is not set
-    if (process.env.NODE_ENV === 'production' && allowedOrigins.includes('*')) {
-        res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    } else if (allowedOrigins.includes(origin) || !origin) {
+    if (allowedOrigins.includes(origin) || !origin) {
         res.setHeader('Access-Control-Allow-Origin', origin || '*');
     }
-    
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -50,30 +43,7 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Inject API URL into config.js for frontend (BEFORE static files)
-// If NEXT_PUBLIC_API_URL is set (for separate frontend deployment), use it
-// Otherwise, use relative path '/api' for same-origin requests
-app.get('/js/config.js', (req, res) => {
-    let apiUrl = '/api'; // Default: relative path for same-origin
-    
-    // If NEXT_PUBLIC_API_URL is set, use it (for separate frontend on Vercel)
-    if (process.env.NEXT_PUBLIC_API_URL) {
-        apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        // Ensure it ends with /api if it doesn't already
-        if (!apiUrl.endsWith('/api')) {
-            apiUrl = apiUrl.endsWith('/') ? `${apiUrl}api` : `${apiUrl}/api`;
-        }
-    }
-    
-    res.type('application/javascript');
-    res.send(`
-        // API Configuration - Injected from server
-        window.API_BASE_URL = '${apiUrl}';
-        window.NEXT_PUBLIC_API_URL = '${apiUrl}';
-    `);
-});
-
-// Serve static files from frontend folder (after dynamic routes)
+// Serve static files from frontend folder FIRST (before routes)
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
 
 // Serve uploaded files
