@@ -146,8 +146,8 @@ class EmploymentController {
             const pendingApplications = await query(
                 `SELECT ea.*, se.job_id, se.job_title, se.department_id, se.description, se.salary, se.hours_per_week, se.status as job_status, se.posted_at, se.application_deadline, se.supervisor_id,
                  u.user_id, u.email, u.first_name, u.last_name
-                 FROM employmentApplications ea
-                 JOIN studentEmployment se ON ea.job_id = se.job_id
+                 FROM employmentapplications ea
+                 JOIN studentemployment se ON ea.job_id = se.job_id
                  JOIN users u ON ea.user_id = u.user_id
                  WHERE ea.status = 'pending'
                  ORDER BY ea.application_date ASC`
@@ -220,7 +220,7 @@ class EmploymentController {
 
             // Check if user already has an approved application
             const existingApproved = await query(
-                `SELECT * FROM employmentApplications 
+                `SELECT * FROM employmentapplications 
                  WHERE user_id = ? AND status = 'approved' AND application_id != ?`,
                 [application[0].user_id, applicationId]
             );
@@ -264,7 +264,7 @@ class EmploymentController {
 
             // Reject other pending applications for the same job and semester
             const otherApplications = await query(
-                `SELECT * FROM employmentApplications 
+                `SELECT * FROM employmentapplications 
                  WHERE application_id != ? AND job_id = ? AND semester = ? AND status = 'pending'`,
                 [applicationId, application[0].job_id, application[0].semester]
             );
@@ -287,7 +287,7 @@ class EmploymentController {
 
             // Also reject any other pending applications by the same user
             const userOtherApps = await query(
-                `SELECT * FROM employmentApplications 
+                `SELECT * FROM employmentapplications 
                  WHERE application_id != ? AND user_id = ? AND status = 'pending'`,
                 [applicationId, application[0].user_id]
             );
