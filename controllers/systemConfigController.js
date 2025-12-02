@@ -3,17 +3,17 @@ const { query } = require('../config/db');
 class SystemConfigController {
     static async getConfig(req, res) {
         try {
-            const configs = await query('SELECT * FROM systemConfig LIMIT 1');
+            const configs = await query('SELECT * FROM systemconfig LIMIT 1');
             
             if (configs.length === 0) {
                 // Initialize default config
                 await query(
-                    `INSERT INTO systemConfig 
+                    `INSERT INTO systemconfig 
                      (booking_time_limit_hours, cancellation_policy_hours, buffer_period_minutes, 
                       max_bookings_per_user, reminder_time_before_hours)
                      VALUES (24, 2, 15, 5, 1)`
                 );
-                const newConfig = await query('SELECT * FROM systemConfig LIMIT 1');
+                const newConfig = await query('SELECT * FROM systemconfig LIMIT 1');
                 return res.json(newConfig[0] || {});
             }
             
@@ -25,7 +25,7 @@ class SystemConfigController {
 
     static async updateConfig(req, res) {
         try {
-            const configs = await query('SELECT * FROM systemConfig LIMIT 1');
+            const configs = await query('SELECT * FROM systemconfig LIMIT 1');
             
             const fields = Object.keys(req.body).filter(key => req.body[key] !== undefined);
             if (fields.length === 0) {
@@ -37,7 +37,7 @@ class SystemConfigController {
                 const values = fields.map(key => req.body[key]);
                 const placeholders = fields.map(() => '?').join(', ');
                 await query(
-                    `INSERT INTO systemConfig (${fields.join(', ')}) VALUES (${placeholders})`,
+                    `INSERT INTO systemconfig (${fields.join(', ')}) VALUES (${placeholders})`,
                     values
                 );
             } else {
@@ -45,12 +45,12 @@ class SystemConfigController {
                 const setClause = fields.map(key => `${key} = ?`).join(', ');
                 const values = fields.map(key => req.body[key]);
                 await query(
-                    `UPDATE systemConfig SET ${setClause} LIMIT 1`,
+                    `UPDATE systemconfig SET ${setClause} LIMIT 1`,
                     values
                 );
             }
             
-            const updated = await query('SELECT * FROM systemConfig LIMIT 1');
+            const updated = await query('SELECT * FROM systemconfig LIMIT 1');
             res.json({ message: 'Configuration updated', config: updated[0] });
         } catch (error) {
             res.status(500).json({ error: error.message });

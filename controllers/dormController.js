@@ -5,7 +5,7 @@ class DormController {
     static async getAvailableDorms(req, res) {
         try {
             // Use the new availableDorms catalog as the primary source,
-            // but still expose the linked dormunits.dorm_id so booking works.
+            // but still expose the linked dormUnits.dorm_id so booking works.
             const dorms = await query(
                 `SELECT 
                     ad.available_dorm_id,
@@ -33,7 +33,7 @@ class DormController {
         try {
             const { dormId, semester } = req.body;
             const dorm = await query(
-                'SELECT * FROM dormunits WHERE dorm_id = ?',
+                'SELECT * FROM dormUnits WHERE dorm_id = ?',
                 [dormId]
             );
             
