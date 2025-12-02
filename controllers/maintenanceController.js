@@ -64,10 +64,28 @@ class MaintenanceController {
 
     static async getCleaningTasks(req, res) {
         try {
-            const tasks = await query('SELECT * FROM cleaningtasks ORDER BY created_at DESC');
+            // Filter tasks by assigned_to if user is cleaning staff, or show all if admin/maintenance manager
+            let tasks;
+            if (req.user.subrole === 'cleaning') {
+                tasks = await query(
+                    'SELECT * FROM cleaningtasks WHERE assigned_to = ? ORDER BY created_at DESC',
+                    [req.user.user_id]
+                );
+            } else {
+                // Admin or maintenance manager can see all tasks
+                tasks = await query('SELECT * FROM cleaningtasks ORDER BY created_at DESC');
+            }
+            
             const allTasks = await Promise.all(tasks.map(async (t) => {
                 const resource = await resources.findById(t.resource_id);
-                return { ...t, resource };
+                
+                // Fetch checklist items for this task
+                const checklist = await query(
+                    'SELECT * FROM cleaningtaskchecklist WHERE task_id = ? ORDER BY checklist_id',
+                    [t.task_id]
+                );
+                
+                return { ...t, resource, checklist };
             }));
             res.json(allTasks);
         } catch (error) {
