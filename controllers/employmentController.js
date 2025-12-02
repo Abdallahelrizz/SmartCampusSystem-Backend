@@ -5,7 +5,28 @@ const { users } = require('../utils/dbHelpers');
 class EmploymentController {
     static async getJobs(req, res) {
         try {
-            const jobs = await query('SELECT * FROM studentemployment WHERE status = ?', ['active']);
+            // Read from the new availableJobs catalog, joined to studentEmployment when linked.
+            const jobs = await query(
+                `SELECT 
+                    aj.available_job_id,
+                    aj.job_id,
+                    COALESCE(aj.job_title, se.job_title) AS job_title,
+                    COALESCE(aj.description, se.description) AS description,
+                    COALESCE(aj.salary, se.salary) AS salary,
+                    COALESCE(aj.hours_per_week, se.hours_per_week) AS hours_per_week,
+                    aj.department_id,
+                    d.name AS department_name,
+                    aj.required_skills,
+                    aj.location,
+                    aj.semester,
+                    aj.status,
+                    aj.posted_at,
+                    aj.application_deadline
+                 FROM availableJobs aj
+                 LEFT JOIN studentEmployment se ON aj.job_id = se.job_id
+                 LEFT JOIN departments d ON aj.department_id = d.department_id
+                 WHERE aj.status = 'open'`
+            );
             res.json(jobs);
         } catch (error) {
             res.status(500).json({ error: error.message });

@@ -4,7 +4,26 @@ const Notification = require('../models/Notification');
 class DormController {
     static async getAvailableDorms(req, res) {
         try {
-            const dorms = await query('SELECT * FROM dormunits WHERE status = ?', ['available']);
+            // Use the new availableDorms catalog as the primary source,
+            // but still expose the linked dormunits.dorm_id so booking works.
+            const dorms = await query(
+                `SELECT 
+                    ad.available_dorm_id,
+                    ad.dorm_id,
+                    COALESCE(ad.building, du.building) AS building,
+                    COALESCE(ad.unit_number, du.unit_number) AS unit_number,
+                    COALESCE(ad.capacity, du.capacity) AS capacity,
+                    COALESCE(ad.gender_policy, du.gender_policy) AS gender_policy,
+                    COALESCE(ad.price_per_semester, du.price_per_semester) AS price_per_semester,
+                    COALESCE(ad.semester, du.semester) AS semester,
+                    ad.available_from,
+                    ad.available_to,
+                    COALESCE(ad.status, du.status) AS status,
+                    ad.notes
+                 FROM availableDorms ad
+                 LEFT JOIN dormUnits du ON ad.dorm_id = du.dorm_id
+                 WHERE ad.status = 'available'`
+            );
             res.json(dorms);
         } catch (error) {
             res.status(500).json({ error: error.message });
