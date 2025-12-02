@@ -43,7 +43,18 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Serve static files from frontend folder FIRST (before routes)
+// Inject API URL into config.js for frontend (BEFORE static files)
+app.get('/js/config.js', (req, res) => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+    res.type('application/javascript');
+    res.send(`
+        // API Configuration - Injected from server
+        window.API_BASE_URL = '${apiUrl}';
+        window.NEXT_PUBLIC_API_URL = '${apiUrl}';
+    `);
+});
+
+// Serve static files from frontend folder (after dynamic routes)
 app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
 
 // Serve uploaded files
