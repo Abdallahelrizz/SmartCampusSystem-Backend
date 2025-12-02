@@ -24,8 +24,7 @@ class EmploymentController {
                     aj.application_deadline
                  FROM availableJobs aj
                  LEFT JOIN studentEmployment se ON aj.job_id = se.job_id
-                 LEFT JOIN departments d ON aj.department_id = d.department_id
-                 WHERE aj.status = 'open'`
+                 LEFT JOIN departments d ON aj.department_id = d.department_id`
             );
             res.json(jobs);
         } catch (error) {
@@ -68,6 +67,16 @@ class EmploymentController {
             
             if (existingApplication.length > 0) {
                 return res.status(400).json({ error: 'You have already applied for this job' });
+            }
+
+            // Check if the job already has an approved candidate
+            const approvedForJob = await query(
+                'SELECT * FROM employmentapplications WHERE job_id = ? AND status = ? LIMIT 1',
+                [jobId, 'approved']
+            );
+
+            if (approvedForJob.length > 0) {
+                return res.status(400).json({ error: 'This job has already been filled' });
             }
 
             const result = await query(
@@ -257,6 +266,14 @@ class EmploymentController {
                  SET status = 'approved', reviewed_by = ?, reviewed_at = NOW()
                  WHERE application_id = ?`,
                 [req.user.user_id, applicationId]
+            );
+
+            // Mark the related job as filled/unavailable in the catalog if it exists
+            await query(
+                `UPDATE availableJobs 
+                 SET status = 'filled' 
+                 WHERE job_id = ?`,
+                [application[0].job_id]
             );
 
             await Notification.create({

@@ -18,11 +18,10 @@ class DormController {
                     COALESCE(ad.semester, du.semester) AS semester,
                     ad.available_from,
                     ad.available_to,
-                    COALESCE(ad.status, du.status) AS status,
+                    COALESCE(du.status, ad.status) AS status,
                     ad.notes
                  FROM availableDorms ad
-                 LEFT JOIN dormUnits du ON ad.dorm_id = du.dorm_id
-                 WHERE ad.status = 'available'`
+                 LEFT JOIN dormUnits du ON ad.dorm_id = du.dorm_id`
             );
             res.json(dorms);
         } catch (error) {
@@ -79,6 +78,14 @@ class DormController {
                  SET assigned_user_id = ?, status = 'occupied', start_date = ?, end_date = ?, semester = ?
                  WHERE dorm_id = ?`,
                 [req.user.user_id, startDate, endDate, semester, dormId]
+            );
+
+            // Mark corresponding catalog entry as filled/unavailable if it exists
+            await query(
+                `UPDATE availableDorms 
+                 SET status = 'filled' 
+                 WHERE dorm_id = ?`,
+                [dormId]
             );
 
             await Notification.create({
