@@ -6,6 +6,7 @@ class EmploymentController {
     static async getJobs(req, res) {
         try {
             // Read from the new availableJobs catalog, joined to studentEmployment when linked.
+            // Return all catalog entries with status 'open' from the catalog
             const jobs = await query(
                 `SELECT 
                     aj.available_job_id,
@@ -19,12 +20,14 @@ class EmploymentController {
                     aj.required_skills,
                     aj.location,
                     aj.semester,
+                    aj.status AS catalog_status,
                     aj.status,
                     aj.posted_at,
                     aj.application_deadline
                  FROM availableJobs aj
                  LEFT JOIN studentEmployment se ON aj.job_id = se.job_id
-                 LEFT JOIN departments d ON aj.department_id = d.department_id`
+                 LEFT JOIN departments d ON aj.department_id = d.department_id
+                 WHERE aj.status = 'open'`
             );
             res.json(jobs);
         } catch (error) {
@@ -39,10 +42,55 @@ class EmploymentController {
             }
 
             const { jobId, semester } = req.body;
-            const job = await query('SELECT * FROM studentEmployment WHERE job_id = ?', [jobId]);
             
+            // Try to find job in studentEmployment first
+            let job = await query('SELECT * FROM studentEmployment WHERE job_id = ?', [jobId]);
+            let actualJobId = jobId;
+            let catalogEntry = null;
+
+            // If not found in studentEmployment, check if it's an available_job_id from catalog
             if (!job[0]) {
-                return res.status(404).json({ error: 'Job not found' });
+                catalogEntry = await query(
+                    'SELECT * FROM availableJobs WHERE available_job_id = ?',
+                    [jobId]
+                );
+                
+                if (!catalogEntry[0]) {
+                    return res.status(404).json({ error: 'Job not found' });
+                }
+
+                if (catalogEntry[0].status !== 'open') {
+                    return res.status(400).json({ error: 'Job is not available' });
+                }
+
+                // Create a new studentEmployment record from catalog entry
+                const result = await query(
+                    `INSERT INTO studentEmployment 
+                     (job_title, department_id, description, salary, hours_per_week, status, posted_at, application_deadline)
+                     VALUES (?, ?, ?, ?, ?, 'active', NOW(), ?)`,
+                    [
+                        catalogEntry[0].job_title,
+                        catalogEntry[0].department_id,
+                        catalogEntry[0].description,
+                        catalogEntry[0].salary,
+                        catalogEntry[0].hours_per_week,
+                        catalogEntry[0].application_deadline
+                    ]
+                );
+                
+                actualJobId = result.insertId;
+                
+                // Link the catalog entry to the new studentEmployment record
+                await query(
+                    'UPDATE availableJobs SET job_id = ? WHERE available_job_id = ?',
+                    [actualJobId, jobId]
+                );
+                
+                // Fetch the newly created job
+                job = await query(
+                    'SELECT * FROM studentEmployment WHERE job_id = ?',
+                    [actualJobId]
+                );
             }
 
             // Determine current semester if not provided
@@ -62,7 +110,7 @@ class EmploymentController {
             // Check if already applied for this job
             const existingApplication = await query(
                 'SELECT * FROM employmentapplications WHERE job_id = ? AND user_id = ?',
-                [jobId, req.user.user_id]
+                [actualJobId, req.user.user_id]
             );
             
             if (existingApplication.length > 0) {
@@ -72,7 +120,7 @@ class EmploymentController {
             // Check if the job already has an approved candidate
             const approvedForJob = await query(
                 'SELECT * FROM employmentapplications WHERE job_id = ? AND status = ? LIMIT 1',
-                [jobId, 'approved']
+                [actualJobId, 'approved']
             );
 
             if (approvedForJob.length > 0) {
@@ -82,7 +130,7 @@ class EmploymentController {
             const result = await query(
                 `INSERT INTO employmentapplications (job_id, user_id, semester, application_date, status)
                  VALUES (?, ?, ?, NOW(), 'pending')`,
-                [jobId, req.user.user_id, currentSemester]
+                [actualJobId, req.user.user_id, currentSemester]
             );
 
             const applicationId = result.insertId;

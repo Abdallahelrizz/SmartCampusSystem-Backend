@@ -6,6 +6,7 @@ class DormController {
         try {
             // Use the new availableDorms catalog as the primary source,
             // but still expose the linked dormUnits.dorm_id so booking works.
+            // Return all catalog entries with status 'available' from the catalog
             const dorms = await query(
                 `SELECT 
                     ad.available_dorm_id,
@@ -18,10 +19,12 @@ class DormController {
                     COALESCE(ad.semester, du.semester) AS semester,
                     ad.available_from,
                     ad.available_to,
+                    ad.status AS catalog_status,
                     COALESCE(du.status, ad.status) AS status,
                     ad.notes
                  FROM availableDorms ad
-                 LEFT JOIN dormUnits du ON ad.dorm_id = du.dorm_id`
+                 LEFT JOIN dormUnits du ON ad.dorm_id = du.dorm_id
+                 WHERE ad.status = 'available'`
             );
             res.json(dorms);
         } catch (error) {
@@ -32,19 +35,7 @@ class DormController {
     static async bookDorm(req, res) {
         try {
             const { dormId, semester } = req.body;
-            const dorm = await query(
-                'SELECT * FROM dormUnits WHERE dorm_id = ?',
-                [dormId]
-            );
             
-            if (!dorm[0]) {
-                return res.status(404).json({ error: 'Dorm not found' });
-            }
-
-            if (dorm[0].status !== 'available') {
-                return res.status(400).json({ error: 'Dorm is not available' });
-            }
-
             // Check if user already has any active dorm reservation (only one dorm per student)
             const existingReservation = await query(
                 `SELECT * FROM dormUnits 
@@ -56,6 +47,64 @@ class DormController {
                 return res.status(400).json({ 
                     error: 'You already have a dorm reservation. Please cancel it before booking a new room.' 
                 });
+            }
+
+            // Try to find dorm in dormUnits first
+            let dorm = await query(
+                'SELECT * FROM dormUnits WHERE dorm_id = ?',
+                [dormId]
+            );
+            
+            let actualDormId = dormId;
+            let catalogEntry = null;
+
+            // If not found in dormUnits, check if it's an available_dorm_id from catalog
+            if (!dorm[0]) {
+                catalogEntry = await query(
+                    'SELECT * FROM availableDorms WHERE available_dorm_id = ?',
+                    [dormId]
+                );
+                
+                if (!catalogEntry[0]) {
+                    return res.status(404).json({ error: 'Dorm not found' });
+                }
+
+                if (catalogEntry[0].status !== 'available') {
+                    return res.status(400).json({ error: 'Dorm is not available' });
+                }
+
+                // Create a new dormUnits record from catalog entry
+                const result = await query(
+                    `INSERT INTO dormUnits 
+                     (building, unit_number, capacity, gender_policy, price_per_semester, status)
+                     VALUES (?, ?, ?, ?, ?, 'available')`,
+                    [
+                        catalogEntry[0].building,
+                        catalogEntry[0].unit_number,
+                        catalogEntry[0].capacity,
+                        catalogEntry[0].gender_policy,
+                        catalogEntry[0].price_per_semester
+                    ]
+                );
+                
+                actualDormId = result.insertId;
+                
+                // Link the catalog entry to the new dormUnits record
+                await query(
+                    'UPDATE availableDorms SET dorm_id = ? WHERE available_dorm_id = ?',
+                    [actualDormId, dormId]
+                );
+                
+                // Fetch the newly created dorm
+                dorm = await query(
+                    'SELECT * FROM dormUnits WHERE dorm_id = ?',
+                    [actualDormId]
+                );
+            } else {
+                // Dorm exists in dormUnits, check availability
+                if (dorm[0].status !== 'available') {
+                    return res.status(400).json({ error: 'Dorm is not available' });
+                }
             }
 
             // Calculate semester dates
@@ -77,15 +126,15 @@ class DormController {
                 `UPDATE dormUnits 
                  SET assigned_user_id = ?, status = 'occupied', start_date = ?, end_date = ?, semester = ?
                  WHERE dorm_id = ?`,
-                [req.user.user_id, startDate, endDate, semester, dormId]
+                [req.user.user_id, startDate, endDate, semester, actualDormId]
             );
 
             // Mark corresponding catalog entry as filled/unavailable if it exists
             await query(
                 `UPDATE availableDorms 
                  SET status = 'filled' 
-                 WHERE dorm_id = ?`,
-                [dormId]
+                 WHERE dorm_id = ? OR available_dorm_id = ?`,
+                [actualDormId, dormId]
             );
 
             await Notification.create({
