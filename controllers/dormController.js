@@ -47,7 +47,7 @@ class DormController {
 
             // Check if user already has any active dorm reservation (only one dorm per student)
             const existingReservation = await query(
-                `SELECT * FROM dormunits 
+                `SELECT * FROM dormUnits 
                  WHERE assigned_user_id = ? AND status = 'occupied'`,
                 [req.user.user_id]
             );
@@ -74,7 +74,7 @@ class DormController {
             }
 
             await query(
-                `UPDATE dormunits 
+                `UPDATE dormUnits 
                  SET assigned_user_id = ?, status = 'occupied', start_date = ?, end_date = ?, semester = ?
                  WHERE dorm_id = ?`,
                 [req.user.user_id, startDate, endDate, semester, dormId]
@@ -104,7 +104,7 @@ class DormController {
     static async getMyReservation(req, res) {
         try {
             const userDorm = await query(
-                `SELECT * FROM dormunits 
+                `SELECT * FROM dormUnits 
                  WHERE assigned_user_id = ? AND status = 'occupied' 
                  LIMIT 1`,
                 [req.user.user_id]
@@ -122,7 +122,7 @@ class DormController {
         try {
             const { dormId } = req.params;
             const dorm = await query(
-                'SELECT * FROM dormunits WHERE dorm_id = ?',
+                'SELECT * FROM dormUnits WHERE dorm_id = ?',
                 [dormId]
             );
             
@@ -131,7 +131,7 @@ class DormController {
             }
 
             await query(
-                `UPDATE dormunits 
+                `UPDATE dormUnits 
                  SET assigned_user_id = NULL, status = 'available', 
                      start_date = NULL, end_date = NULL, semester = NULL
                  WHERE dorm_id = ?`,
