@@ -1,24 +1,35 @@
 const mysql = require('mysql2/promise');
 
 // Database configuration
+// Railway provides MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE
+// Also supports DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT
 const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'smartcampus',
+    host: process.env.MYSQL_HOST || process.env.DB_HOST || (process.env.NODE_ENV === 'production' ? null : 'localhost'),
+    user: process.env.MYSQL_USER || process.env.DB_USER || (process.env.NODE_ENV === 'production' ? null : 'root'),
+    password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD || (process.env.NODE_ENV === 'production' ? null : ''),
+    database: process.env.MYSQL_DATABASE || process.env.DB_NAME || (process.env.NODE_ENV === 'production' ? null : 'smartcampus'),
+    port: process.env.MYSQL_PORT || process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    // SSL configuration for production (Railway, etc.)
-    ssl: process.env.NODE_ENV === 'production' && process.env.DB_SSL === 'true' 
+    // SSL configuration for production (Railway requires SSL)
+    ssl: (process.env.NODE_ENV === 'production' || process.env.MYSQL_HOST || process.env.DB_HOST) 
         ? { rejectUnauthorized: false }
         : false
 };
 
-// Ensure required environment variables are set
-if (!process.env.DB_PASSWORD && process.env.NODE_ENV === 'production') {
-    console.error('✗ DB_PASSWORD environment variable is required in production');
-    process.exit(1);
+// Ensure required environment variables are set in production
+if (process.env.NODE_ENV === 'production') {
+    const hasHost = process.env.MYSQL_HOST || process.env.DB_HOST;
+    const hasPassword = process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD;
+    const hasUser = process.env.MYSQL_USER || process.env.DB_USER;
+    const hasDatabase = process.env.MYSQL_DATABASE || process.env.DB_NAME;
+    
+    if (!hasHost || !hasPassword || !hasUser || !hasDatabase) {
+        console.error('✗ Database environment variables are required in production');
+        console.error('   Required: DB_HOST (or MYSQL_HOST), DB_USER (or MYSQL_USER), DB_PASSWORD (or MYSQL_PASSWORD), DB_NAME (or MYSQL_DATABASE)');
+        process.exit(1);
+    }
 }
 
 // Create connection pool
