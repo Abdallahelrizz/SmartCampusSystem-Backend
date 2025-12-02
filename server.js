@@ -93,20 +93,42 @@ app.use('/api/faculty/classroom-change', classroomChangeRoutes);
 app.use('/api/maintenance/preventive', preventiveMaintenanceRoutes);
 app.use('/api/admin/config', systemConfigRoutes);
 
-// Serve frontend pages
+// Serve frontend pages (with .html extension)
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'index.html'));
 });
 
+app.get('/index.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'index.html'));
+});
+
 app.get('/login', (req, res) => {
+    res.redirect('/login.html');
+});
+
+app.get('/login.html', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'login.html'));
 });
 
 app.get('/signup', (req, res) => {
+    res.redirect('/signup.html');
+});
+
+app.get('/signup.html', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'signup.html'));
 });
 
 app.get('/dashboard/:role', (req, res) => {
+    const role = req.params.role;
+    const validRoles = ['student', 'faculty', 'maintenance', 'admin'];
+    if (validRoles.includes(role)) {
+        res.redirect(`/dashboard-${role}.html`);
+    } else {
+        res.status(404).send('Page not found');
+    }
+});
+
+app.get('/dashboard-:role.html', (req, res) => {
     const role = req.params.role;
     const validRoles = ['student', 'faculty', 'maintenance', 'admin'];
     if (validRoles.includes(role)) {
