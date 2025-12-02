@@ -46,16 +46,16 @@ class DormController {
                 return res.status(400).json({ error: 'Dorm is not available' });
             }
 
-            // Check if user already has a reservation for this semester
+            // Check if user already has any active dorm reservation (only one dorm per student)
             const existingReservation = await query(
                 `SELECT * FROM dormunits 
-                 WHERE assigned_user_id = ? AND semester = ? AND status = 'occupied'`,
-                [req.user.user_id, semester]
+                 WHERE assigned_user_id = ? AND status = 'occupied'`,
+                [req.user.user_id]
             );
             
             if (existingReservation.length > 0) {
                 return res.status(400).json({ 
-                    error: `You already have a dorm reservation for the ${semester} semester` 
+                    error: 'You already have a dorm reservation. Please cancel it before booking a new room.' 
                 });
             }
 

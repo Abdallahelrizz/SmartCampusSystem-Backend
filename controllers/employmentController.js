@@ -70,23 +70,6 @@ class EmploymentController {
                 return res.status(400).json({ error: 'You have already applied for this job' });
             }
 
-            // Check if already applied for any job this semester
-            const semesterApplication = await query(
-                `SELECT * FROM employmentapplications 
-                 WHERE user_id = ? AND semester = ? AND status NOT IN ('rejected', 'withdrawn')`,
-                [req.user.user_id, currentSemester]
-            );
-            
-            if (semesterApplication.length > 0) {
-                const existingJob = await query(
-                    'SELECT * FROM studentemployment WHERE job_id = ?',
-                    [semesterApplication[0].job_id]
-                );
-                return res.status(400).json({ 
-                    error: `You can only apply for one job per semester. You have already applied for ${existingJob[0]?.job_title || 'a job'} this ${currentSemester} semester.` 
-                });
-            }
-
             const result = await query(
                 `INSERT INTO employmentapplications (job_id, user_id, semester, application_date, status)
                  VALUES (?, ?, ?, NOW(), 'pending')`,
