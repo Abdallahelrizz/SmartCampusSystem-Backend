@@ -43,8 +43,10 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Serve static files from frontend folder FIRST (before routes)
-app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
+// Serve static files from frontend folder (CSS, JS, images) - but NOT HTML files (handled by routes)
+app.use('/css', express.static(path.join(__dirname, '..', 'frontend', 'public', 'css')));
+app.use('/js', express.static(path.join(__dirname, '..', 'frontend', 'public', 'js')));
+app.use('/images', express.static(path.join(__dirname, '..', 'frontend', 'public', 'images')));
 
 // Serve uploaded files
 app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -93,7 +95,7 @@ app.use('/api/faculty/classroom-change', classroomChangeRoutes);
 app.use('/api/maintenance/preventive', preventiveMaintenanceRoutes);
 app.use('/api/admin/config', systemConfigRoutes);
 
-// Serve frontend pages (with .html extension)
+// Serve frontend pages (with .html extension) - MUST be after API routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'index.html'));
 });
@@ -124,18 +126,25 @@ app.get('/dashboard/:role', (req, res) => {
     if (validRoles.includes(role)) {
         res.redirect(`/dashboard-${role}.html`);
     } else {
-        res.status(404).send('Page not found');
+        res.status(404).sendFile(path.join(__dirname, '..', 'frontend', 'public', 'index.html'));
     }
 });
 
-app.get('/dashboard-:role.html', (req, res) => {
-    const role = req.params.role;
-    const validRoles = ['student', 'faculty', 'maintenance', 'admin'];
-    if (validRoles.includes(role)) {
-        res.sendFile(path.join(__dirname, '..', 'frontend', 'public', `dashboard-${role}.html`));
-    } else {
-        res.status(404).send('Page not found');
-    }
+// Dashboard routes
+app.get('/dashboard-student.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'dashboard-student.html'));
+});
+
+app.get('/dashboard-faculty.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'dashboard-faculty.html'));
+});
+
+app.get('/dashboard-maintenance.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'dashboard-maintenance.html'));
+});
+
+app.get('/dashboard-admin.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'dashboard-admin.html'));
 });
 
 // Start reminder checker (runs every 5 minutes)
@@ -146,16 +155,22 @@ setInterval(() => {
 // Error handling middleware (should be after all routes)
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    res.status(err.status || 500).json({
-        error: process.env.NODE_ENV === 'production' 
-            ? 'Internal server error' 
-            : err.message
-    });
+    // Only return JSON for API routes
+    if (req.path.startsWith('/api/')) {
+        res.status(err.status || 500).json({
+            error: process.env.NODE_ENV === 'production' 
+                ? 'Internal server error' 
+                : err.message
+        });
+    } else {
+        // For non-API routes, redirect to home
+        res.redirect('/');
+    }
 });
 
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found' });
+// 404 handler - only for API routes
+app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API route not found' });
 });
 
 // Start server
